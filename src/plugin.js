@@ -6,7 +6,7 @@ import ConcreteMenuItem from './ConcreteMenuItem';
 // Default options for the plugin.
 const defaults = {
   sortAscending: false,
-  autoPlacement: 'top'
+  autoPlacement: 'bottom'
 };
 
 // Cross-compatibility for Video.js 5 and 6.
@@ -43,7 +43,7 @@ class HlsQualitySelectorPlugin {
    * @return {*} - videojs-hls-contrib plugin.
    */
   getHls() {
-    return this.player.tech({ IWillNotUseThisInPlugins: true }).hls;
+    return this.player.tech({ IWillNotUseThisInPlugins: true }).vhs;
   }
 
   /**
@@ -170,7 +170,7 @@ class HlsQualitySelectorPlugin {
     this._currentQuality = height;
 
     if (this.config.displayCurrentQuality) {
-      this.setButtonInnerText(height === 'auto' ? height : `${height}p`);
+      this.setButtonInnerText(height === `auto (${height}p)` ? height : `${height}p`);
     }
 
     for (let i = 0; i < qualityList.length; ++i) {
