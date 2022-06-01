@@ -4,7 +4,10 @@ import ConcreteButton from './ConcreteButton';
 import ConcreteMenuItem from './ConcreteMenuItem';
 
 // Default options for the plugin.
-const defaults = {};
+const defaults = {
+  sortAscending: true,
+  autoPlacement: 'top'
+};
 
 // Cross-compatibility for Video.js 5 and 6.
 const registerPlugin = videojs.registerPlugin || videojs.plugin;
@@ -108,49 +111,47 @@ class HlsQualitySelectorPlugin {
     const qualityList = player.qualityLevels();
     const levels = qualityList.levels_ || [];
     const levelItems = [];
+    const autoPlacement = this.config.autoPlacement;
+    const autoMenuItem = this.getQualityMenuItem.call(this, {
+      label: player.localize('Auto'),
+      value: 'auto',
+      selected: true
+    });
 
     for (let i = 0; i < levels.length; ++i) {
-      const {width, height} = levels[i];
-      const pixels = width > height ? height : width;
-
-      if (!pixels) {
-        continue;
-      }
-
       if (!levelItems.filter(_existingItem => {
-        return _existingItem.item && _existingItem.item.value === pixels;
+        return _existingItem.item && _existingItem.item.value === levels[i].height;
       }).length) {
         const levelItem = this.getQualityMenuItem.call(this, {
-          label: pixels + 'p',
-          value: pixels
+          label: levels[i].height + 'p',
+          value: levels[i].height
         });
 
         levelItems.push(levelItem);
       }
     }
-
-    levelItems.sort((current, next) => {
-      if ((typeof current !== 'object') || (typeof next !== 'object')) {
-        return -1;
-      }
-      if (current.item.value < next.item.value) {
-        return -1;
-      }
-      if (current.item.value > next.item.value) {
-        return 1;
-      }
-      return 0;
-    });
-
-    levelItems.push(this.getQualityMenuItem.call(this, {
-      label: player.localize('Auto'),
-      value: 'auto',
-      selected: true
-    }));
+    // sort the quality level values
+    if (this.config.sortAscending) {
+      levelItems.sort((current, next) => {
+        if ((typeof current !== 'object') || (typeof next !== 'object')) {
+          return -1;
+        }
+        return current.item.value - next.item.value;
+      });
+    } else {
+      levelItems.sort((current, next) => {
+        if ((typeof current !== 'object') || (typeof next !== 'object')) {
+          return -1;
+        }
+        return next.item.value - current.item.value;
+      });
+    }
 
     if (this._qualityButton) {
       this._qualityButton.createItems = function() {
-        return levelItems;
+        // put 'auto' at the top or bottom per option parameter
+        return autoPlacement === 'top' ? [autoMenuItem, ...levelItems] :
+          [...levelItems, autoMenuItem];
       };
       this._qualityButton.update();
     }
@@ -158,25 +159,24 @@ class HlsQualitySelectorPlugin {
   }
 
   /**
-   * Sets quality (based on media short side)
+   * Sets quality (based on media height)
    *
-   * @param {number} quality - A number representing HLS playlist.
+   * @param {number} height - A number representing HLS playlist.
    */
-  setQuality(quality) {
+  setQuality(height) {
     const qualityList = this.player.qualityLevels();
 
     // Set quality on plugin
-    this._currentQuality = quality;
+    this._currentQuality = height;
 
     if (this.config.displayCurrentQuality) {
-      this.setButtonInnerText(quality === 'auto' ? quality : `${quality}p`);
+      this.setButtonInnerText(height === 'auto' ? height : `${height}p`);
     }
 
     for (let i = 0; i < qualityList.length; ++i) {
-      const {width, height} = qualityList[i];
-      const pixels = width > height ? height : width;
+      const quality = qualityList[i];
 
-      qualityList[i].enabled = (pixels === quality || quality === 'auto');
+      quality.enabled = (quality.height === height || height === 'auto');
     }
     this._qualityButton.unpressButton();
   }
