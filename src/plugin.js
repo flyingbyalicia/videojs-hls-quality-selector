@@ -5,7 +5,7 @@ import ConcreteMenuItem from './ConcreteMenuItem';
 
 // Default options for the plugin.
 const defaults = {
-  sortAscending: true,
+  sortAscending: false,
   autoPlacement: 'top'
 };
 
